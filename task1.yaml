@@ -1,0 +1,62 @@
+--- #Connection
+- name: Task1 playbook
+  hosts: all
+  become: true
+  become_method: sudo
+  user: ec2-user 
+  tasks:
+  - name: Information
+    ansible.builtin.debug:
+      var: ansible_facts['distribution']
+
+# Install Mariadb-server on Ubuntu 
+  - name: Install webserver Ubuntu
+    when: 
+    - ansible_facts['distribution'] == "Ubuntu" 
+    ansible.builtin.package:
+      name: mariadb-server
+      state: present
+    notify: Restart webserver Ubuntu
+
+# Creating users on Amazon. 
+  # with_items and using list caused issues so simplified code
+  - name: Create bob account
+    ansible.builtin.user:
+      name: bob
+      state: present
+      generate_ssh_key: yes
+
+  - name: Create lisa accounts
+    ansible.builtin.user:
+      name: lisa
+      state: present
+      generate_ssh_key: yes
+
+  - name: Create ben accounts
+    ansible.builtin.user:
+      name: ben
+      state: present
+      generate_ssh_key: yes
+
+  - name: Create katy accounts
+    ansible.builtin.user:
+      name: katy
+      state: present
+      generate_ssh_key: yes 
+
+ # Download the address.csv file to user home directory. 
+  # Used /etc/skel directory. Can be done manually for each user or using with_items     
+  - name: Download url in user home directory
+    get_url:
+      url: https://people.sc.fsu.edu/~jburkardt/data/csv/addresses.csv
+      dest: /etc/skel
+      mode: '0644'  
+  
+  
+  handlers:
+  - name: Restart webserver Ubuntu
+    when: 
+    - ansible_facts['distribution'] == "Ubuntu"
+    systemd:
+      name: mariadb-server
+      state: restarted  
